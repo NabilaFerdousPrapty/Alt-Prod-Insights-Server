@@ -45,6 +45,11 @@ async function run() {
       const result = await collection.insertOne( newQuery );
       res.json(result);
     });
+    app.get('/queries', async (req, res) => {
+      const cursor = collection.find({});
+      const queries = await cursor.toArray();
+      res.json(queries);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
