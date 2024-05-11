@@ -4,14 +4,10 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
 
-const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
-  credentials: true,
-  optionSuccessStatus: 200
-}; 
+
 
 // middleware
-app.use(cors(corsOptions)); 
+app.use(cors()); 
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -40,6 +36,15 @@ async function run() {
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    const database = client.db('AltProdInsights');
+    const collection = database.collection('Queries');
+
+    app.post('/queries', async (req, res) => {
+      const  newQuery  = req.body;
+      console.log(newQuery);
+      const result = await collection.insertOne( newQuery );
+      res.json(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
