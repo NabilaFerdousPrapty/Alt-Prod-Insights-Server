@@ -18,6 +18,7 @@ app.listen(port, () => {
 });
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const e = require('express');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pflyccd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -50,6 +51,13 @@ async function run() {
       const queries = await cursor.toArray();
       res.json(queries);
     });
+    app.get('/queries/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = await collection.find({email: email}).toArray();
+      res.send(query);
+      console.log(email);
+    });
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
