@@ -5,9 +5,19 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 
-
 // middleware
-app.use(cors()); 
+// app.use(
+//   cors({
+//     origin: [
+//       "http://localhost:5173",
+//       "http://localhost:5174",
+//       "altprodinsights.web.app",
+//       "altprodinsights.firebaseapp.com"
+//     ],
+//     credentials: true,
+//   })
+// ); 
+app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -17,7 +27,7 @@ app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const e = require('express');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pflyccd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -51,12 +61,30 @@ async function run() {
       const queries = await cursor.toArray();
       res.json(queries);
     });
-    app.get('/queries/:email', async (req, res) => {
+    
+    app.get('/queriess/:email', async (req, res) => {
       const email = req.params.email;
       const query = await collection.find({email: email}).toArray();
       res.send(query);
       console.log(email);
     });
+    app.get('/queries/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      console.log(id);
+      const result = await collection.findOne(query);
+      res.send(result);
+     
+    }); 
+    app.get('/myQueries/:id',async (req,res)=>{
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await collection.findOne(query);
+      res.send(result);
+      
+    }) 
+    
     
   } finally {
     // Ensures that the client will close when you finish/error
