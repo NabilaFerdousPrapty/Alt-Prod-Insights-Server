@@ -49,6 +49,7 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
     const database = client.db('AltProdInsights');
     const collection = database.collection('Queries');
+    const recommendationCollection = database.collection('Recommendation');
 
     app.post('/queries', async (req, res) => {
       const  newQuery  = req.body;
@@ -78,12 +79,61 @@ async function run() {
     }); 
     app.get('/myQueries/:id',async (req,res)=>{
       const id = req.params.id;
-      console.log(id);
+      // console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await collection.findOne(query);
       res.send(result);
       
     }) 
+    app.patch('/myQueries/update/:id', async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const updatedQuery = {
+        $set: {
+          productName: req.body.productName,
+          productBrand: req.body.productBrand,
+          productImageUrl: req.body.productImageUrl,
+          queryTitle: req.body.queryTitle,
+          buyingReasonDetails: req.body.buyingReasonDetails,
+        },
+      };
+      const result = await collection.updateOne(query, updatedQuery)
+      console.log(result);
+      res.send(result)
+     
+  });
+  app.delete('/myQueries/delete/:id', async (req, res) => {
+    const query = { _id: new ObjectId(req.params.id) };
+    const result = await collection.deleteOne(query);
+    res.send(result);
+  });
+    app.patch('/allQueries/:id', async (req, res) => {
+      const queryId = req.params.id;
+  
+      try {
+        // Update the query document using $inc operator
+        const result = await collection.updateOne(
+          { _id: new ObjectId(queryId) },
+          { $inc: { recommendationCount: 1 } }
+        );
+  
+        if (result.modifiedCount === 1) {
+          res.status(200).json({ message: 'Recommendation count updated successfully' });
+        } else {
+          res.status(404).json({ error: 'Query document not found' });
+        }
+      } catch (error) {
+        console.error('Error updating recommendation count:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+    app.post('/recommendations', async (req, res) => {
+      const  newRecommendation  = req.body;
+      // console.log(newRecommendation);
+      const result = await recommendationCollection.insertOne( newRecommendation );
+      res.send(result);
+    });
+
+
     
     
   } finally {
