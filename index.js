@@ -132,7 +132,42 @@ async function run() {
       const result = await recommendationCollection.insertOne( newRecommendation );
       res.send(result);
     });
+    app.get('/recommendations', async (req, res) => {
+      const cursor = recommendationCollection.find({});
+      const recommendations = await cursor.toArray();
+      res.send(recommendations);
+    }
+    );
+    app.get('/recommendations/:email', async (req, res) => {
+      const email = req.params.email;
+      const recommendation = await recommendationCollection .find({RecommenderEmail: email}).toArray(); 
+      res.send(recommendation);
+    });
+    app.get('/ForMeRecommendations/:email', async (req, res) => {
+      const email = req.params.email;
+      const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
+      res.send(recommendation);
+    });
+app.get('/ForMeRecommendations/:email', async (req, res) => {
+  const email = req.params.email;
+  const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
+  res.send(recommendation);
+});
+app.get('/ForMeRecommendations/:email', async (req, res) => {
+  const email = req.params.email;
+  const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
+  res.send(recommendation);
+});
+app.get('/meRecommendations/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+      console.log(id);
+      const result = await recommendationCollection.findOne(query);
+      res.send(result);
+}
+);
 
+    
 
     
     
