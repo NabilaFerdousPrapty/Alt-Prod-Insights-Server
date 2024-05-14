@@ -4,21 +4,45 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 // middleware
-// app.use(
-//   cors({
-//     origin: [
-//       "http://localhost:5173",
-//       "http://localhost:5174",
-//       "altprodinsights.web.app",
-//       "altprodinsights.firebaseapp.com"
-//     ],
-//     credentials: true,
-//   })
-// ); 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://altprodinsights.web.app',
+    'https://altprodinsights.firebaseapp.com'
+  ],
+  credentials: true,
+  optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 app.use(express.json());
+app.use(cookieParser());
+
+// jwt verify middleware
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log(token);
+  if (!token) {
+    return res.status(401).send({ message: 'Unauthorized access !!! You are not authenticated' });
+  }
+  if (token) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).send({ message: 'Unauthorized access !!! You are not authenticated' });
+      }
+      console.log(decoded);
+      req.user = decoded;
+      next();
+    })
+  }
+  else {
+    return res.status(401).send('You are not authenticated');
+  }
+
+}
 
 app.get('/', (req, res) => {
   res.send('Alternative product is searching!');
@@ -43,19 +67,35 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.connect();
+    // // Send a ping to confirm a successful connection
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
     const database = client.db('AltProdInsights');
     const collection = database.collection('Queries');
     const recommendationCollection = database.collection('Recommendation');
 
     //auth related api
-    app.post('jwt', async (req, res) => {
+    app.post('/jwt', async (req, res) => {
       const user = req.body;
-      console.log(user);
-      res.send(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '365d' });
+      res.cookie(
+        'token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+      }
+      ).send({ success: true });
+    })
+    app.get('/logout', (req, res) => {
+      res.clearCookie(
+        'token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 0,
+      }
+      ).send({ success: true });
     })
 
     app.post('/queries', async (req, res) => {
@@ -71,12 +111,17 @@ async function run() {
     });
 
     app.get('/queriess/:email', async (req, res) => {
+      // const tokenEmail = req.user.email;
+      // if (tokenEmail !== req.params.email) {
+      //   return res.status(403).send({ message: 'Forbidden access !!! You are not authorized' });
+      // }
       const email = req.params.email;
       const query = await collection.find({ email: email }).toArray();
       res.send(query);
-      console.log(email);
+      // console.log(email);
     });
-    app.get('/queries/:id', async (req, res) => {
+    app.get('/queries/:id',  async (req, res) => {
+
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       console.log(id);
@@ -84,7 +129,7 @@ async function run() {
       res.send(result);
 
     });
-    app.get('/myQueries/:id', async (req, res) => {
+    app.get('/myQueries/:id',  async (req, res) => {
       const id = req.params.id;
       // console.log(id);
       const query = { _id: new ObjectId(id) };
@@ -93,6 +138,7 @@ async function run() {
 
     })
     app.patch('/myQueries/update/:id', async (req, res) => {
+
       const query = { _id: new ObjectId(req.params.id) };
       const updatedQuery = {
         $set: {
@@ -104,11 +150,11 @@ async function run() {
         },
       };
       const result = await collection.updateOne(query, updatedQuery)
-      console.log(result);
+      // console.log(result);
       res.send(result)
 
     });
-    app.delete('/myQueries/delete/:id', async (req, res) => {
+    app.delete('/myQueries/delete/:id',  async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await collection.deleteOne(query);
       res.send(result);
@@ -133,26 +179,31 @@ async function run() {
         res.status(500).json({ error: 'Internal server error' });
       }
     });
-    app.post('/recommendations', async (req, res) => {
+    app.post('/recommendations',  async (req, res) => {
       const newRecommendation = req.body;
       // console.log(newRecommendation);
       const result = await recommendationCollection.insertOne(newRecommendation);
       res.send(result);
     });
-    app.get('/recommendations', async (req, res) => {
+    app.get('/recommendations',  async (req, res) => {
+      const tokenEmail = req.user.email;
+      // console.log(tokenData ,'from token');
+      if (tokenEmail !== req.params.email) {
+        return res.status(403).send({ message: 'Forbidden access !!! You are not authorized' });
+      }
       const cursor = recommendationCollection.find({});
       const recommendations = await cursor.toArray();
       res.send(recommendations);
     }
     );
-    app.get('/myRecommendations/:id', async (req, res) => {
+    app.get('/meRecommendations/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       console.log(id);
       const result = await recommendationCollection.findOne(query);
       res.send(result);
     });
-    app.get('/recommendations/:email', async (req, res) => {
+    app.get('/recommendations/:email',  async (req, res) => {
       const email = req.params.email;
       const recommendation = await recommendationCollection.find({ RecommenderEmail: email }).toArray();
       res.send(recommendation);
@@ -201,7 +252,7 @@ async function run() {
       const recommendation = await recommendationCollection.find({ userEmail: email }).toArray();
       res.send(recommendation);
     });
-   
+
     // app.get('/myRecommendations/:id', async (req, res) => {
     //   const id = req.params.id;
     //   const query = { _id: new ObjectId(id) };
@@ -214,7 +265,7 @@ async function run() {
     app.get('/allRecommendations/:id', async (req, res) => {
       const id = req.params.id;
       console.log(id);
-      const query = { queryId:id };
+      const query = { queryId: id };
       console.log(query);
       const result = await recommendationCollection.find(query).toArray();
       res.send(result);
