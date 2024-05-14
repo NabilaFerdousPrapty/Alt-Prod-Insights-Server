@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
-
+const jwt = require('jsonwebtoken');
 
 // middleware
 // app.use(
@@ -21,8 +21,8 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('Alternative product is searching!');
-    });
+  res.send('Alternative product is searching!');
+});
 app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
@@ -51,10 +51,17 @@ async function run() {
     const collection = database.collection('Queries');
     const recommendationCollection = database.collection('Recommendation');
 
+    //auth related api
+    app.post('jwt', async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      res.send(user);
+    })
+
     app.post('/queries', async (req, res) => {
-      const  newQuery  = req.body;
+      const newQuery = req.body;
       console.log(newQuery);
-      const result = await collection.insertOne( newQuery );
+      const result = await collection.insertOne(newQuery);
       res.json(result);
     });
     app.get('/queries', async (req, res) => {
@@ -62,10 +69,10 @@ async function run() {
       const queries = await cursor.toArray();
       res.json(queries);
     });
-    
+
     app.get('/queriess/:email', async (req, res) => {
       const email = req.params.email;
-      const query = await collection.find({email: email}).toArray();
+      const query = await collection.find({ email: email }).toArray();
       res.send(query);
       console.log(email);
     });
@@ -75,16 +82,16 @@ async function run() {
       console.log(id);
       const result = await collection.findOne(query);
       res.send(result);
-     
-    }); 
-    app.get('/myQueries/:id',async (req,res)=>{
+
+    });
+    app.get('/myQueries/:id', async (req, res) => {
       const id = req.params.id;
       // console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await collection.findOne(query);
       res.send(result);
-      
-    }) 
+
+    })
     app.patch('/myQueries/update/:id', async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const updatedQuery = {
@@ -99,23 +106,23 @@ async function run() {
       const result = await collection.updateOne(query, updatedQuery)
       console.log(result);
       res.send(result)
-     
-  });
-  app.delete('/myQueries/delete/:id', async (req, res) => {
-    const query = { _id: new ObjectId(req.params.id) };
-    const result = await collection.deleteOne(query);
-    res.send(result);
-  });
+
+    });
+    app.delete('/myQueries/delete/:id', async (req, res) => {
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await collection.deleteOne(query);
+      res.send(result);
+    });
     app.patch('/allQueries/:id', async (req, res) => {
       const queryId = req.params.id;
-  
+
       try {
         // Update the query document using $inc operator
         const result = await collection.updateOne(
           { _id: new ObjectId(queryId) },
           { $inc: { recommendationCount: 1 } }
         );
-  
+
         if (result.modifiedCount === 1) {
           res.status(200).json({ message: 'Recommendation count updated successfully' });
         } else {
@@ -127,9 +134,9 @@ async function run() {
       }
     });
     app.post('/recommendations', async (req, res) => {
-      const  newRecommendation  = req.body;
+      const newRecommendation = req.body;
       // console.log(newRecommendation);
-      const result = await recommendationCollection.insertOne( newRecommendation );
+      const result = await recommendationCollection.insertOne(newRecommendation);
       res.send(result);
     });
     app.get('/recommendations', async (req, res) => {
@@ -138,39 +145,86 @@ async function run() {
       res.send(recommendations);
     }
     );
-    app.get('/recommendations/:email', async (req, res) => {
-      const email = req.params.email;
-      const recommendation = await recommendationCollection .find({RecommenderEmail: email}).toArray(); 
-      res.send(recommendation);
-    });
-    app.get('/ForMeRecommendations/:email', async (req, res) => {
-      const email = req.params.email;
-      const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
-      res.send(recommendation);
-    });
-app.get('/ForMeRecommendations/:email', async (req, res) => {
-  const email = req.params.email;
-  const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
-  res.send(recommendation);
-});
-app.get('/ForMeRecommendations/:email', async (req, res) => {
-  const email = req.params.email;
-  const recommendation = await recommendationCollection.find({userEmail: email}).toArray(); 
-  res.send(recommendation);
-});
-app.get('/meRecommendations/:id', async (req, res) => {
-  const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
+    app.get('/myRecommendations/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
       console.log(id);
       const result = await recommendationCollection.findOne(query);
       res.send(result);
-}
-);
+    });
+    app.get('/recommendations/:email', async (req, res) => {
+      const email = req.params.email;
+      const recommendation = await recommendationCollection.find({ RecommenderEmail: email }).toArray();
+      res.send(recommendation);
+    });
 
-    
 
-    
-    
+    app.delete('/recommendations/delete/:id', async (req, res) => {
+      const queryId = req.params.id;
+      try {
+        // First, retrieve the recommendation document to get the queryId
+        const recommendation = await recommendationCollection.findOne({ _id: new ObjectId(queryId) });
+        if (!recommendation) {
+          return res.status(404).json({ error: 'Recommendation not found' });
+        }
+
+        // Confirm deletion with a check for confirmation
+        const confirmation = req.query.confirmation;
+        if (confirmation !== 'true') {
+          return res.status(400).json({ error: 'Confirmation not received' });
+        }
+
+        // Delete the recommendation
+        const result = await recommendationCollection.deleteOne({ _id: new ObjectId(queryId) });
+        if (result.deletedCount === 1) {
+          // Decrease the recommendation count of the corresponding query
+          const updateResult = await collection.updateOne(
+            { _id: new ObjectId(recommendation.queryId) },
+            { $inc: { recommendationCount: -1 } }
+          );
+          if (updateResult.modifiedCount === 1) {
+            return res.status(200).json({ message: 'Recommendation deleted successfully' });
+          } else {
+            return res.status(500).json({ error: 'Failed to update recommendation count' });
+          }
+        } else {
+          return res.status(500).json({ error: 'Failed to delete recommendation' });
+        }
+      } catch (error) {
+        console.error('Error deleting recommendation:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    app.get('/ForMeRecommendations/:email', async (req, res) => {
+      const email = req.params.email;
+      const recommendation = await recommendationCollection.find({ userEmail: email }).toArray();
+      res.send(recommendation);
+    });
+   
+    // app.get('/myRecommendations/:id', async (req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   console.log(id);
+    //   const result = await collection.findOne(query);
+    //   res.send(result);
+    // }
+    // );
+
+    app.get('/allRecommendations/:id', async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { queryId:id };
+      console.log(query);
+      const result = await recommendationCollection.find(query).toArray();
+      res.send(result);
+    }
+    )
+
+
+
+
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();

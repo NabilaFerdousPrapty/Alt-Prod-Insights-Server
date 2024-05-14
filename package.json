@@ -15,6 +15,7 @@
     "dotenv": "^16.4.5",
     "dotnet": "^1.1.4",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.6.1"
   }
 }
