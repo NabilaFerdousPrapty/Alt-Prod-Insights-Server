@@ -87,24 +87,24 @@ async function run() {
       }
       ).send({ success: true });
     })
-    // app.get('/logout', (req, res) => {
-    //   res.clearCookie(
-    //     'token', {
-    //     httpOnly: true,
-    //     secure: process.env.NODE_ENV === 'production',
-    //     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    //     maxAge: 0,
-    //   }
-    //   ).send({ success: true });
-    // })
+    app.get('/logout', (req, res) => {
+      res.clearCookie(
+        'token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+        maxAge: 0,
+      }
+      ).send({ success: true });
+    })
     // Logout
-app.post('/logout', async (req, res) => {
-  const user = req.body;
-  console.log('logging out', user);
-  res
-  .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
-  .send({ success: true })
-  })
+// app.post('/logout', async (req, res) => {
+//   const user = req.body;
+//   console.log('logging out', user);
+//   res
+//   .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
+//   .send({ success: true })
+//   })
 
     app.post('/queries', async (req, res) => {
       const newQuery = req.body;
