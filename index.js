@@ -110,7 +110,7 @@ async function run() {
       res.json(queries);
     });
 
-    app.get('/queriess/:email', async (req, res) => {
+    app.get('/queriess/:email',verifyToken, async (req, res) => {
       // const tokenEmail = req.user.email;
       // if (tokenEmail !== req.params.email) {
       //   return res.status(403).send({ message: 'Forbidden access !!! You are not authorized' });
@@ -120,7 +120,7 @@ async function run() {
       res.send(query);
       // console.log(email);
     });
-    app.get('/queries/:id',  async (req, res) => {
+    app.get('/queries/:id',verifyToken,  async (req, res) => {
 
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -129,7 +129,7 @@ async function run() {
       res.send(result);
 
     });
-    app.get('/myQueries/:id',  async (req, res) => {
+    app.get('/myQueries/:id',verifyToken,  async (req, res) => {
       const id = req.params.id;
       // console.log(id);
       const query = { _id: new ObjectId(id) };
@@ -137,7 +137,7 @@ async function run() {
       res.send(result);
 
     })
-    app.patch('/myQueries/update/:id', async (req, res) => {
+    app.patch('/myQueries/update/:id',verifyToken, async (req, res) => {
 
       const query = { _id: new ObjectId(req.params.id) };
       const updatedQuery = {
@@ -154,12 +154,12 @@ async function run() {
       res.send(result)
 
     });
-    app.delete('/myQueries/delete/:id',  async (req, res) => {
+    app.delete('/myQueries/delete/:id',verifyToken,  async (req, res) => {
       const query = { _id: new ObjectId(req.params.id) };
       const result = await collection.deleteOne(query);
       res.send(result);
     });
-    app.patch('/allQueries/:id', async (req, res) => {
+    app.patch('/allQueries/:id',verifyToken, async (req, res) => {
       const queryId = req.params.id;
 
       try {
@@ -185,7 +185,7 @@ async function run() {
       const result = await recommendationCollection.insertOne(newRecommendation);
       res.send(result);
     });
-    app.get('/recommendations',  async (req, res) => {
+    app.get('/recommendations',verifyToken,  async (req, res) => {
       const tokenEmail = req.user.email;
       // console.log(tokenData ,'from token');
       if (tokenEmail !== req.params.email) {
@@ -196,21 +196,21 @@ async function run() {
       res.send(recommendations);
     }
     );
-    app.get('/meRecommendations/:id', async (req, res) => {
+    app.get('/meRecommendations/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       console.log(id);
       const result = await recommendationCollection.findOne(query);
       res.send(result);
     });
-    app.get('/recommendations/:email',  async (req, res) => {
+    app.get('/recommendations/:email',verifyToken,  async (req, res) => {
       const email = req.params.email;
       const recommendation = await recommendationCollection.find({ RecommenderEmail: email }).toArray();
       res.send(recommendation);
     });
 
 
-    app.delete('/recommendations/delete/:id', async (req, res) => {
+    app.delete('/recommendations/delete/:id',verifyToken, async (req, res) => {
       const queryId = req.params.id;
       try {
         // First, retrieve the recommendation document to get the queryId
@@ -247,7 +247,7 @@ async function run() {
       }
     });
 
-    app.get('/ForMeRecommendations/:email', async (req, res) => {
+    app.get('/ForMeRecommendations/:email',verifyToken, async (req, res) => {
       const email = req.params.email;
       const recommendation = await recommendationCollection.find({ userEmail: email }).toArray();
       res.send(recommendation);
@@ -262,7 +262,7 @@ async function run() {
     // }
     // );
 
-    app.get('/allRecommendations/:id', async (req, res) => {
+    app.get('/allRecommendations/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       console.log(id);
       const query = { queryId: id };
