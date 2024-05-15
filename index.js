@@ -24,7 +24,7 @@ app.use(cookieParser());
 // jwt verify middleware
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  console.log(token);
+  // console.log(token);
   if (!token) {
     return res.status(401).send({ message: 'Unauthorized access !!! You are not authenticated' });
   }
@@ -33,7 +33,7 @@ const verifyToken = (req, res, next) => {
       if (err) {
         return res.status(401).send({ message: 'Unauthorized access !!! You are not authenticated' });
       }
-      console.log(decoded);
+      // console.log(decoded);
       req.user = decoded;
       next();
     })
@@ -124,7 +124,7 @@ async function run() {
 
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      console.log(id);
+      // console.log(id);
       const result = await collection.findOne(query);
       res.send(result);
 
@@ -175,7 +175,7 @@ async function run() {
           res.status(404).json({ error: 'Query document not found' });
         }
       } catch (error) {
-        console.error('Error updating recommendation count:', error);
+        // console.error('Error updating recommendation count:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -199,7 +199,7 @@ async function run() {
     app.get('/meRecommendations/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      console.log(id);
+      // console.log(id);
       const result = await recommendationCollection.findOne(query);
       res.send(result);
     });
@@ -242,7 +242,7 @@ async function run() {
           return res.status(500).json({ error: 'Failed to delete recommendation' });
         }
       } catch (error) {
-        console.error('Error deleting recommendation:', error);
+        // console.error('Error deleting recommendation:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
@@ -264,9 +264,9 @@ async function run() {
 
     app.get('/allRecommendations/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+      // console.log(id);
       const query = { queryId: id };
-      console.log(query);
+      // console.log(query);
       const result = await recommendationCollection.find(query).toArray();
       res.send(result);
     }
