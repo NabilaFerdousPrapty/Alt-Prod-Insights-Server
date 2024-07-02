@@ -261,15 +261,6 @@ async function run() {
       res.send(recommendation);
     });
 
-    // app.get('/myRecommendations/:id', async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   console.log(id);
-    //   const result = await collection.findOne(query);
-    //   res.send(result);
-    // }
-    // );
-
     app.get('/allRecommendations/:id', async (req, res) => {
       const id = req.params.id;
       // console.log(id);
